@@ -9,5 +9,5 @@ typedef struct {
 }Product;
 void add_product();
 void list_product();
-
+void stock_in();
 #endif // !PRODUCT_H //结束

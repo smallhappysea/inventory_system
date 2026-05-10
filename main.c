@@ -5,7 +5,7 @@ int main()
 {
     int choice;
     while(1) {
-        printf("\n1.添加 2.查看 3.退出\n");
+        printf("\n1.添加 2.查看 3.入库 0.退出\n");
         if(scanf("%d",&choice)!=1)
         {
             while(getchar()!='\n');
@@ -22,6 +22,9 @@ int main()
             list_product();
             break;
         case 3:
+            stock_in();
+            break;
+        case 0:
             exit(0);
         default:
             printf("无效选择\n");

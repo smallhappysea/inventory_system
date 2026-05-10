@@ -65,6 +65,57 @@ void add_product(){
     }
 
 }
+void stock_in()//1.输入名称 2.找到名称 3.进行添加 
+{
+    Product p;
+    char buffer[100];
+    int pid,qty,found=0;
+    list_product();
+    printf("请输入要入库的商品ID:");
+    fgets(buffer,sizeof(buffer),stdin);
+    sscanf(buffer,"%d",&pid);//这里怎么搭配的？
+
+    printf("请输入入库数量:");
+    while(1) {
+        fgets(buffer,sizeof(buffer),stdin);
+        if(sscanf(buffer,"%d",&qty)==1 && qty> 0 ) break;
+        printf("输入错误，请输入正整数:");
+    }
+    //先打开文件才能进行后续真正意义上的添加
+    FILE *fp=fopen(FILE_NAME,"r+b");//这里是读写模式
+    if(!fp) {
+        printf("无法打开文件！\n");
+        return ;
+    }
+    while(fread(&p,sizeof(Product),1,fp)==1)
+    {
+        if(p.id==pid) {
+            found = 1;
+            p.stock += qty;
+
+            //这里看不懂
+            fseek(fp,-sizeof(Product),SEEK_CUR);
+            fwrite(&p,sizeof(Product),1,fp);
+            break;
+        }
+    }
+    fclose(fp);
+
+    if(!found) {
+        printf("商品ID %d 不存在！ \n",pid);
+        return;
+    }
+    FILE *log=fopen("operation.log","a");
+    if(log)
+    {
+        time_t now=time(NULL);
+        fprintf(log,"[入库] ID:%d 入库数:%d  新库存:%d 时间:%s",
+        p.id,qty,p.stock,ctime(&now));
+        fclose(log);
+
+    }
+    printf("入库成功！%s 的新库存为 %d\n",p.name,p.stock);
+}
 void list_product()
 {
     Product p;
