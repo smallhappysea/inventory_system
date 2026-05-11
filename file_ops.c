@@ -105,7 +105,7 @@ void stock_in()//1.输入名称 2.找到名称 3.进行添加
         printf("商品ID %d 不存在！ \n",pid);
         return;
     }
-    FILE *log=fopen("operation.log","a");
+    FILE *log=fopen("stock_log.txt","a");
     if(log)
     {
         time_t now=time(NULL);
