@@ -1,8 +1,10 @@
 #include<stdio.h>
 #include<string.h>
+#include<stdlib.h>//解决没有realloc和free
 #include<time.h>
 #include"product.h"
 #define FILE_NAME "product.dat"//把product.dat宏定义为FILE_NAME
+
 //以下为静态函数（static 只在当前文件内可见，不会被其他函数调用）
 static int get_next_id()//自动生成不重复的商品id
 {
@@ -116,6 +118,73 @@ void stock_in()//1.输入名称 2.找到名称 3.进行添加
     }
     printf("入库成功！%s 的新库存为 %d\n",p.name,p.stock);
 }
+void delect_product()
+{
+    //二进制文件本身不支持“删除中间某条记录”——因此我们可以转为覆盖
+    int pid,found=0;
+    char buffer[100];
+    Product p;
+    Product *list = NULL;//不能用p *list=NULL;p是变量名 不能代替product这个类
+    int count=0;//
+
+    list_product();
+    printf("请输入要删除的商品ID:");
+    fgets(buffer,sizeof(buffer),stdin);
+    sscanf(buffer,"%d",&pid);
+    
+    FILE *fp=fopen(FILE_NAME,"rb");//rb:只读二进制；r+b:读写二进制
+    if(!fp) {
+        printf("无法打开文件！\n");
+        return ;
+    }
+    while(fread(&p,sizeof(Product),1,fp)==1)
+    {
+        if(p.id==pid) 
+        {
+            found = 1;
+            continue;//不加入list
+        }
+        //动态扩容列表
+        //realloc的作用是一遍读取一遍扩容
+        //防止realloc失败(内存不足)，会返回null 添加检查返回值
+        Product *new_list=realloc(list,(count+1)*sizeof(Product));
+        if(new_list==NULL){
+            printf("内存分配失败！ \n");
+            free(list);
+            fclose(fp);
+            return;
+        }
+        list = new_list;
+        list[count]=p;
+        count++;
+    }
+    fclose(fp);
+    if(!found) {
+        printf("商品ID %d 不存在！ \n",pid);
+        free(list);
+        return ;
+    }
+    fp=fopen(FILE_NAME,"wb");
+    if(!fp) {
+        printf("无法打开文件写入! \n");
+        free(list);
+        return;
+    }
+    for(int i=0;i<count;i++){
+        fwrite(&list[i],sizeof(Product),1,fp);
+    }
+    fclose(fp);
+    free(list);
+    FILE *log=fopen("operation.log","a");//a:追加
+    if(log) {
+        time_t now=time(NULL);
+        fprintf(log,"[删除]ID:%d 时间：%s",pid,ctime(&now));
+        fclose(log);
+    }
+    printf("删库成功!ID为:%d ",pid);
+}
+
+
 void list_product()
 {
     Product p;
