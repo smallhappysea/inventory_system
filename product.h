@@ -11,4 +11,5 @@ void add_product();
 void list_product();
 void stock_in();
 void delect_product();
+void modify_product();
 #endif // !PRODUCT_H //结束

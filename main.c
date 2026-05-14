@@ -5,7 +5,7 @@ int main()
 {
     int choice;
     while(1) {
-        printf("\n1.添加 2.查看 3.入库 4.删库 0.退出\n");
+        printf("\n1.添加 2.查看 3.入库 4.删库 5.修改 0.退出\n");
         if(scanf("%d",&choice)!=1)
         {
             while(getchar()!='\n');
@@ -27,6 +27,8 @@ int main()
         case 4:
             delect_product();
             break;
+        case 5:
+            modify_product();
         case 0:
             exit(0);
         default:

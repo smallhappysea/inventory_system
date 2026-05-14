@@ -25,13 +25,15 @@ void add_product(){
     char buffer[100];
     printf("名称：");
     fgets(p.name,MAX_NAME_LEN,stdin);//（读取的数据，大小，输入流） stdin:标准输入
+    //scanf会在空格处停，而fgets是包含的，长度在第二个元素
     p.name[strcspn(p.name,"\n")] = 0;//去掉末尾换行符
     //strcspn获取第一个'\n'前的字符串个数换成\0就读不到了
     printf("价格：");
-    //防止格式错误提前返回 scanf("%f",&p.price);//用buffer存储
+    //防止格式错误提前返回 (因为换行符的存在)scanf("%f",&p.price);//用buffer存储
     while(1){
     fgets(buffer,sizeof(buffer),stdin);
-    if(sscanf(buffer,"%f",&p.price)==1) break;
+    if(sscanf(buffer,"%f",&p.price)==1) break;//（字符串，格式，存入的变量）
+    //sscanf返回值不是字符串内容，而是成功解析的变量个数
     printf("价格无效,重新输入：\n");
     }
     printf("库存：");
@@ -52,7 +54,7 @@ void add_product(){
         printf("文件打开失败！\n");
         return;
     }
-    fwrite(&p,sizeof(Product),1,fp);    //写入结构体
+    fwrite(&p,sizeof(Product),1,fp);    //写入结构体（这里的1是结构体的单元个数），fp已打开的文件指针
     fclose(fp);
     printf("添加成功,ID=%d\n",p.id);
 
@@ -62,6 +64,7 @@ void add_product(){
         time_t now=time(NULL);
         fprintf(log,"[添加] ID:%d 名称:%s 价格:%.2f 库存:%d 时间:%s",
         p.id,p.name,p.price,p.stock,ctime(&now));
+        //返回当前静态存储的时间，多线程用ctime_r
         fclose(log);
 
     }
@@ -94,9 +97,9 @@ void stock_in()//1.输入名称 2.找到名称 3.进行添加
         if(p.id==pid) {
             found = 1;
             p.stock += qty;
-
-            //这里看不懂
-            fseek(fp,-sizeof(Product),SEEK_CUR);
+            //文件指针回退，然后用新的结构体数据进行覆盖
+            fseek(fp,-sizeof(Product),SEEK_CUR);//移动指针，偏移量，文件开头移动，基准点是当前指针位置
+            //复写用的，目的，不影响其他记录
             fwrite(&p,sizeof(Product),1,fp);
             break;
         }
@@ -183,8 +186,6 @@ void delect_product()
     }
     printf("删库成功!ID为:%d ",pid);
 }
-
-
 void list_product()
 {
     Product p;
@@ -199,4 +200,76 @@ void list_product()
         printf("%d\t%s\t%.2f\t%d\n",p.id,p.name,p.price,p.stock);
     }
     fclose(fp);
+}
+
+void modify_product() {
+    int modified=0;
+    int pid,found=0,choice;
+    char buffer[100];
+    Product p;
+
+    list_product();
+    printf("请输入要修改的商品ID:");
+    fgets(buffer,sizeof(buffer),stdin);
+    sscanf(buffer,"%d",&pid);
+
+    FILE *fp=fopen(FILE_NAME,"r+b");
+    if(!fp){
+        printf("无法打开文件！\n");
+        return ;
+    }
+
+    while(fread(&p,sizeof(Product),1,fp)==1 && !found)
+    {
+        if(p.id==pid)
+        {
+            found=1;
+            printf("当前商品信息: %s,价格: %.2f,库存:%d\n",p.name,p.price,p.stock);
+            printf("1.修改名称  2.修改价格  3.修改名称+价格 0.取消\n");
+            fgets(buffer,sizeof(buffer),stdin);
+            sscanf(buffer,"%d",&choice);
+            if(choice == 1 || choice ==3){
+                printf("新名称:");
+                fgets(p.name,MAX_NAME_LEN,stdin);
+                p.name[strcspn(p.name,"\n")]=0;
+                modified=1;
+            }
+
+            if(choice==2 || choice ==3){
+                printf("新价格:");
+                fgets(buffer,sizeof(buffer),stdin);
+                sscanf(buffer,"%f",&p.price);
+                modified=1;
+            }
+
+            if(modified)
+            {
+                fseek(fp,-sizeof(Product),SEEK_CUR);
+                fwrite(&p,sizeof(Product),1,fp);
+                printf("修改成功\n");
+
+                //日志
+                FILE *log = fopen("operation.log","a");
+                if(log) {
+                    time_t now=time(NULL);
+                    fprintf(log,"[修改] ID:%d 新名称:%s 新价格:%.2f 时间:%s",
+                    p.id,p.name,p.price,ctime(&now));
+                    fclose(log);
+                }
+            }
+            else if(choice==0){
+                printf("取消修改\n");
+            }
+            else{
+                printf("无效选项,不做修改");
+            }
+            break;
+        }
+    }
+    fclose(fp);
+    if(!found)
+    {
+        printf("商品ID不存在!\n");
+        return;
+    }
 }
