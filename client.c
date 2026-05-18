@@ -16,22 +16,35 @@ int main()
 
     //连接服务器
     connect(sock,(struct sockaddr*)&server_addr,sizeof(server_addr));
-    printf("连接服务器成功\n");
+    printf("连接服务器成功,输入命令(list / get ID / quit)\n");
 
     //发送消息
-    char *msg = "list";
-    send(sock,msg,strlen(msg),0);
+    char input[256];
+    char buffer[4096]={0};
+    while(1)
+    {
+        printf("> ");
+        fflush(stdout);
+        if(!fgets(input,sizeof(input),stdin)) break;
+        input[strcspn(input,"\n")]=0;
+
+        if(strcmp(input,"quit")==0) break;
+        send(sock,input,strlen(input),0);
+
+        int len=recv(sock,buffer,sizeof(buffer)-1,0);
+        if(len<=0)
+        {
+        
+            printf("断开连接/接受失败");
+            break;
+        }
+        buffer[len]='\0';
+        printf("%s\n",buffer);
+    }
 
     //接收消息
-    char buffer[1024]={0};
-    int len=recv(sock,buffer,sizeof(buffer)-1,0);
-    if(len>0)
-    {
-        buffer[len]='\0';
-        printf("商品列表：\n%s\n",buffer);
-    }else{
-        printf("接受失败或连接关闭\n");
-    }
+    
+    
     
 
     //关闭

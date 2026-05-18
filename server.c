@@ -1,12 +1,15 @@
 //socket第二次
 //1.创建2.绑定地址端口3.监听4.接受连接5.回复6.关闭
 #include<stdio.h>
+#include<stdlib.h>
 #include<string.h>
 #include<unistd.h>//关闭socket
 #include<sys/socket.h>
 #include<netinet/in.h>//ipve地址结构等
 #include"product.h"
 void get_product_list(char *buf,int size);
+
+void get_product_by_id(int id,char *buf,int size);
 
 int main()
 {
@@ -40,16 +43,22 @@ int main()
             get_product_list(list_buff,sizeof(list_buff));
             send(client_fd,list_buff,strlen(list_buff),0);
         }
+        else if(strncmp(buffer,"id=",3)==0)
+        {
+            int id=atoi(buffer+3);
+            char replay[4096];
+            get_product_by_id(id,replay,sizeof(replay));
+            send(client_fd,replay,strlen(replay),0);
+        }
         else{
             send(client_fd,"未知命令",8,0);
         }
 
 
-
-        //回复客户端
+        /*//回复客户端
         char *reply ="服务端已收到";
         send(client_fd,reply,strlen(reply),0);
-
+        */
         //关闭连接
         close(client_fd);
     }
@@ -76,5 +85,29 @@ void get_product_list(char *buf,int size)
         p.id,p.name,p.price,p.stock);
         strncat(buf , temp , size - strlen(buf) -1);
     }
+    fclose(fp);
+}
+
+
+void get_product_by_id(int id,char *buf,int size)
+{
+    Product p;
+    FILE *fp=fopen(FILE_NAME,"rb");
+    if(!fp)
+    {
+        snprintf(buf,size,"暂无商品\n");
+        return;
+    }
+    while(fread(&p,sizeof(Product),1,fp)==1)
+    {
+        if(p.id==id)
+        {
+            snprintf(buf,size,"ID:%d 名称:%s 价格:%.2f 库存:%d",
+            p.id,p.name,p.price,p.stock);
+            fclose(fp);
+            return ;
+        }
+    }
+    snprintf(buf,size,"商品ID %d 不存在",id);
     fclose(fp);
 }
