@@ -5,6 +5,8 @@
 #include<unistd.h>//关闭socket
 #include<sys/socket.h>
 #include<netinet/in.h>//ipve地址结构等
+#include"product.h"
+void get_product_list(char *buf,int size);
 
 int main()
 {
@@ -23,21 +25,56 @@ int main()
     printf("服务器启动，等待连接...\n");
 
     //接受客户端连接(阻塞)
-    int client_fd = accept(server_fd,NULL,NULL);
+    //用while(1)进行多线程
+    while(1)
+    {
+        int client_fd = accept(server_fd,NULL,NULL);
+        printf("新客户端连接\n");
+        //接受客户端信息
+        char buffer[1024]={0};
+        recv(client_fd,buffer,sizeof(buffer),0);
+        printf("收到客户端消息：%s\n",buffer);
+        if(strcmp(buffer,"list")==0)
+        {
+            char list_buff[4096];
+            get_product_list(list_buff,sizeof(list_buff));
+            send(client_fd,list_buff,strlen(list_buff),0);
+        }
+        else{
+            send(client_fd,"未知命令",8,0);
+        }
 
-    //接受客户端信息
-    char buffer[1024]={0};
-    recv(client_fd,buffer,sizeof(buffer),0);
-    printf("收到客户端消息：%s\n",buffer);
 
-    //回复客户端
-    char *reply ="服务端已收到";
-    send(client_fd,reply,strlen(reply),0);
 
-    //关闭连接
-    close(client_fd);
+        //回复客户端
+        char *reply ="服务端已收到";
+        send(client_fd,reply,strlen(reply),0);
+
+        //关闭连接
+        close(client_fd);
+    }
     close(server_fd);
     return 0;
 
     
+}
+
+void get_product_list(char *buf,int size)
+{
+    Product p;
+    FILE *fp = fopen(FILE_NAME,"rb");
+    if(!fp)
+    {
+        snprintf(buf,size,"暂无商品\n");//一般会自动换行可加\n可不加
+        return;
+    }
+    char temp[256];
+    buf[0]='\0';//初始化空字符串
+    while(fread(&p,sizeof(Product),1,fp)==1)
+    {
+        snprintf(temp,sizeof(temp),"ID:%d 名称:%s 价格:%.2f 库存:%d\n",
+        p.id,p.name,p.price,p.stock);
+        strncat(buf , temp , size - strlen(buf) -1);
+    }
+    fclose(fp);
 }

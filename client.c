@@ -19,13 +19,20 @@ int main()
     printf("连接服务器成功\n");
 
     //发送消息
-    char *msg = "你好服务器！";
+    char *msg = "list";
     send(sock,msg,strlen(msg),0);
 
     //接收消息
     char buffer[1024]={0};
-    recv(sock,buffer,sizeof(buffer),0);
-    printf("服务器回复：%s\n",buffer);
+    int len=recv(sock,buffer,sizeof(buffer)-1,0);
+    if(len>0)
+    {
+        buffer[len]='\0';
+        printf("商品列表：\n%s\n",buffer);
+    }else{
+        printf("接受失败或连接关闭\n");
+    }
+    
 
     //关闭
     close(sock);
