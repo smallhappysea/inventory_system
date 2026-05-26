@@ -15,10 +15,15 @@ int main()
     inet_pton(AF_INET,"127.0.0.1",&server_addr.sin_addr);
 
     //连接服务器
-    connect(sock,(struct sockaddr*)&server_addr,sizeof(server_addr));
-    printf("连接服务器成功,输入命令(list / get ID / quit)\n");
+    if(connect(sock,(struct sockaddr*)&server_addr,sizeof(server_addr)) < 0)//单纯break会导致就算没连接也会输出连接成功
+    {
+        perror("connect failed\n");
+        close(sock);
+        return 1;
+    }
+    printf("连接服务器成功,输入命令(list / get ID / add / quit)\n");
 
-    //发送消息
+    //发送
     char input[256];
     char buffer[4096]={0};
     while(1)
@@ -29,13 +34,17 @@ int main()
         input[strcspn(input,"\n")]=0;
 
         if(strcmp(input,"quit")==0) break;
-        send(sock,input,strlen(input),0);
+        if(send(sock,input,strlen(input),0) < 0)
+        {
+            perror("send");
+            break;
+        }
 
         int len=recv(sock,buffer,sizeof(buffer)-1,0);
         if(len<=0)
         {
-        
-            printf("断开连接/接受失败");
+            if(len == 0) printf("服务器关闭连接\n");
+            else perror("recv");
             break;
         }
         buffer[len]='\0';

@@ -2,8 +2,7 @@
 #include<string.h>
 #include<stdlib.h>//解决没有realloc和free
 #include<time.h>
-#include"product.h"
-#define FILE_NAME "product.dat"//把product.dat宏定义为FILE_NAME
+#include"product.h" 
 
 //以下为静态函数（static 只在当前文件内可见，不会被其他函数调用）
 static int get_next_id()//自动生成不重复的商品id
