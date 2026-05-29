@@ -166,6 +166,8 @@ void *handle_client(void *arg)
 void add_product_remote(const char *name,float price,int stock)
 {
     Product p;
+    pthread_mutex_lock(&file_mutex);//对于全局变量建议加锁，然后别再很小的代码行加锁，会导致效率低下
+
     FILE *fp =fopen(FILE_NAME,"rb");
     int max_id=0;
     if(fp) {
@@ -182,13 +184,23 @@ void add_product_remote(const char *name,float price,int stock)
         p.price=price;
         p.stock=stock;
         
-        pthread_mutex_lock(&file_mutex);
+        
         fp=fopen(FILE_NAME,"ab");
         if(fp) {
             fwrite(&p,sizeof(Product),1,fp);
             fclose(fp);
         }
         pthread_mutex_unlock(&file_mutex);
+
+        FILE *log=fopen("operation.log","a");
+        if(log)
+        {
+            time_t now=time(NULL);
+            fprintf(log,"[远程添加] ID:%d 名称:%s 价格:%.2f 库存:%d 时间:%s",
+                p.id,p.name,p.price,p.stock,ctime(&now));
+                fclose(log);
+        }
+
     }
 }
 //断开连接recv返回<=0
